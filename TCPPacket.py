@@ -124,11 +124,11 @@ class TCPPacket:
         return self.data
 
     #form a RRQ packet
-    def create_syn_rrq_packet(self,name,source,dest,seq,window):
+    def create_syn_rrq_packet(self,name,source,dest,seq):
         self.source_port = BitArray(self.full_hex(hex(source),4))
         self.destination_port = BitArray(self.full_hex(hex(dest),4))
         self.sequence_number = BitArray(self.full_hex(hex(seq),8))
-        self.window = BitArray(self.full_hex(hex(window),4))
+        self.window = BitArray(self.full_hex(hex(0),4))
         #syn = 1, read/urg = 0
         self.control = BitArray('0b000010')
         self.file_name = name
@@ -301,7 +301,7 @@ if __name__ == "__main__":
     data = s.encode()
     p_test = TCPPacket()
     print('syn rrq test')
-    p_test.deconstruct_packet(P.create_syn_rrq_packet(s,151,320,100,6))
+    p_test.deconstruct_packet(P.create_syn_rrq_packet(s,151,320,100))
     p_test.print_self()
     print('\nsyn wrq test')
     p_test.deconstruct_packet(P.create_syn_wrq_packet(s,151,320,100,6))

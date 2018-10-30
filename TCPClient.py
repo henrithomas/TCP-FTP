@@ -23,6 +23,8 @@ parser.add_argument('-m',"--mode",choices={'r','w'},help="Client's mode to eithe
 parser.add_argument('-i',"--ip",action="store",help="Client's IP address")
 args = parser.parse_args()
 
+#CLOSED
+print('client - closed')
 server_port = args.port
 file_name = args.file
 if args.mode == 'r':
@@ -30,8 +32,6 @@ if args.mode == 'r':
 else:
     writing = True
 host = args.ip
-
-#CLOSED
 established = False
 error = False
 block_size = 1024
@@ -44,37 +44,48 @@ client_packet_manager = TCPPacket()
 
 client_socket = socket(AF_INET,SOCK_DGRAM)
 client_socket.settimeout(timeout)
-client_socket.connect((host,server_port))
+server_address = (host,server_port)
+#client_socket.connect((host,server_port))
 
 if writing:
     f = open(file_name, 'rb')
     sending = client_packet_manager.create_syn_wrq_packet(file_name,0,server_port,client_isn,window_size)
-    client_socket.send(sending)
+    client_socket.sendto(sending,server_address)
     print('client - write syn sent')
     client_packet_manager.print_self()
 else:
     file_test = Path(file_name)
     if file_test.is_file():
         f = open(file_name + 'CLIENT', 'wb')
-    sending = client_packet_manager.create_syn_rrq_packet(file_name,0,server_port,client_isn,window_size)
-    client_socket.send(sending)
+    sending = client_packet_manager.create_syn_rrq_packet(file_name,0,server_port,client_isn)
+    client_socket.sendto(sending,server_address)
     print('client - read syn sent')
     client_packet_manager.print_self()
     
 #SYN_SENT
+print('client - syn sent')
 try: 
-    received = client_socket.recv(block_size)
+    received, server = client_socket.recvfrom(block_size)
     client_packet_manager.deconstruct_packet(received)
     established = True
+    print('client - server address check: ip',server[0],' port',server[1])
+    print('client - synack recevied:')
+    client_packet_manager.print_self()
 except timeout:
     print('client - synack timeout, closing connection')
 
 #ESTABLISHED
 if established:
-    print('client - synack received, connection established')
-    client_packet_manager.print_self()
+    print('client - established')
     
+#FIN_WAIT_1
+
+#FIN_WAIT_2
+    
+#TIME_WAIT
+    
+#CLOSED
 f.close()
 client_socket.close()
-print('client complete')
-print('the client is closed')
+print('client - complete')
+print('client - closed')
