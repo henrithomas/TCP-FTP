@@ -264,7 +264,7 @@ class TCPPacket:
 
 
     #deconstruct a packet
-    def deconstructPacket(self, dat):
+    def deconstruct_packet(self, dat):
         self.source_port = BitArray(dat[0:2])
         self.destination_port = BitArray(dat[2:4])
         self.sequence_number = BitArray(dat[4:8])
@@ -301,21 +301,21 @@ if __name__ == "__main__":
     data = s.encode()
     p_test = TCPPacket()
     print('syn rrq test')
-    p_test.deconstructPacket(P.create_syn_rrq_packet(s,151,320,100,6))
+    p_test.deconstruct_packet(P.create_syn_rrq_packet(s,151,320,100,6))
     p_test.print_self()
     print('\nsyn wrq test')
-    p_test.deconstructPacket(P.create_syn_wrq_packet(s,151,320,100,6))
+    p_test.deconstruct_packet(P.create_syn_wrq_packet(s,151,320,100,6))
     p_test.print_self()
     print('\nsynack test')
-    p_test.deconstructPacket(P.create_synack_packet(1002,3456,300,101,True,6))
+    p_test.deconstruct_packet(P.create_synack_packet(1002,3456,300,101,True,6))
     p_test.print_self()
     print('\nack test')
-    p_test.deconstructPacket(P.create_ack_packet(3456,1002,101,301,True,6))
+    p_test.deconstruct_packet(P.create_ack_packet(3456,1002,101,301,True,6))
     p_test.print_self()
     print('\ndata test')
     s = 'whole lotta data, whole lotta data, whole lotta data, whole lotta data, whole lotta data'
     data = s.encode()
-    p_test.deconstructPacket(P.create_data_packet(1002,3456,320,104,True,6,data))
+    p_test.deconstruct_packet(P.create_data_packet(1002,3456,320,104,True,6,data))
     p_test.print_self()    
         
         
