@@ -7,6 +7,7 @@ Assignment 2
 import numpy as np
 from bitstring import BitArray
 from bitstring import Bits
+#add a window shift function
 class TCPWindow:
     def __init__(self,start,size,seq_size):
         self.file_offset = 0
@@ -17,19 +18,19 @@ class TCPWindow:
         self.sequence_array = np.zeros(size,dtype = int)
         self.ack_array = BitArray(int = 0,length=size)
         self.full = False
-    
+
     def set_base(self,b):
         self.base = b
-        
+
     def set_file_offset(self,offset):
         self.file_offset = offset
-        
+
     def get_base(self):
         return self.base
-    
+
     def get_file_offset(self):
         return self.file_offset
-    
+
     def update_window(self,seq):
         for i in range(0,self.window_size):
             if self.sequence_array[i] == 0:
@@ -39,12 +40,12 @@ class TCPWindow:
                 else:
                     self.sequence_array[i] = seq
                     self.next_sequence_number = seq + self.sequence_size
-                
+
                 break
-        
+
     def update_ack(self,i,ack):
         self.ack_array.set(i,ack)
-        
+
     def print_self(self):
         print('window file offset:',self.file_offset)
         print('window base:',self.base)
@@ -54,7 +55,7 @@ class TCPWindow:
         print('window full:',self.full)
         print('window sequence size:',self.sequence_size)
         print('window next sequence number:',self.next_sequence_number)
-    
+
 if __name__ == "__main__":
     window = TCPWindow(302,4,100)
     window.print_self()

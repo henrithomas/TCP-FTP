@@ -61,10 +61,10 @@ else:
     client_socket.sendto(sending,server_address)
     print('client - read syn sent')
     client_packet_manager.print_self()
-    
+
 #SYN_SENT
 print('client - syn sent')
-try: 
+try:
     received, server = client_socket.recvfrom(block_size)
     client_packet_manager.deconstruct_packet(received)
     established = True
@@ -77,13 +77,16 @@ except timeout:
 #ESTABLISHED
 if established:
     print('client - established')
-    
+
 #FIN_WAIT_1
+print('client - fin wait 1')
 
 #FIN_WAIT_2
-    
+print('client - fin wait 2')
+
 #TIME_WAIT
-    
+print('client - time wait')
+
 #CLOSED
 f.close()
 client_socket.close()
