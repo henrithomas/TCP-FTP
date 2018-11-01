@@ -183,6 +183,7 @@ class TCPPacket:
         self.sequence_number = BitArray(self.full_hex(hex(seq),8))
         self.ack_number = BitArray(self.full_hex(hex(ack),8))
         self.window = BitArray(self.full_hex(hex(window),4))
+        self.data = BitArray('0x00000000')
         #send r/w, syn, and ack flags
         if urg:
             self.control = BitArray('0b110010')
@@ -211,6 +212,7 @@ class TCPPacket:
         self.sequence_number = BitArray(self.full_hex(hex(seq),8))
         self.ack_number = BitArray(self.full_hex(hex(ack),8))
         self.window = BitArray(self.full_hex(hex(window),4))
+        self.data = BitArray('0x00000000')
         #send r/w and ack flags
         if urg:
             self.control = BitArray('0b110000')
@@ -262,7 +264,35 @@ class TCPPacket:
         
         return pkt.tobytes()
 
-
+    def create_fin_packet(self,source,dest,seq,ack,urg,window):
+        self.source_port = BitArray(self.full_hex(hex(source),4))
+        self.destination_port = BitArray(self.full_hex(hex(dest),4))
+        self.sequence_number = BitArray(self.full_hex(hex(seq),8))
+        self.ack_number = BitArray(self.full_hex(hex(ack),8))
+        self.window = BitArray(self.full_hex(hex(window),4))
+        self.data = BitArray('0x00000000')
+        #send fin, r/w and ack flags
+        if urg:
+            self.control = BitArray('0b110001')
+        else:
+            self.control = BitArray('0b010001')
+        #create packet string
+        pkt = self.source_port
+        pkt.append(self.destination_port)
+        pkt.append(self.sequence_number)
+        pkt.append(self.ack_number)
+        pkt.append(self.data_offset)
+        pkt.append(self.reserved)
+        pkt.append(self.control)
+        pkt.append(self.window)
+        pkt.append(self.checksum)
+        pkt.append(self.urgent_pointer)
+        pkt.append(self.options)
+        pkt.append(self.padding)
+        pkt.append(self.data)
+        
+        return pkt.tobytes()
+    
     #deconstruct a packet
     def deconstruct_packet(self, dat):
         self.source_port = BitArray(dat[0:2])

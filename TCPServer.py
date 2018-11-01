@@ -24,6 +24,7 @@ args = parser.parse_args()
 server_port = args.port
 client_port = 0
 host = s.gethostname()
+writing = False
 established = False
 error = False
 block_size = 1024
@@ -53,6 +54,7 @@ if client_control_bits[0] == True:
     urg = True
 else:
     urg = False
+    writing = True
     window_size = randint(4,9)
 client_window_size = server_packet_manager.window.uint
 
@@ -69,11 +71,21 @@ print('server - synack ack received')
 if established:
     print('server - established')
     
-#CLOSE_WAIT
-print('server - close wait')
-
-#lAST_ACK
-print('server - last ack')
+if writing:
+    #FIN_WAIT_1
+    print('server - fin wait 1')
+    
+    #FIN_WAIT_2
+    print('server - fin wait 2')
+    
+    #TIME_WAIT
+    print('server - time wait')
+else:
+    #CLOSE_WAIT
+    print('server - close wait')
+    
+    #lAST_ACK
+    print('server - last ack')
 
 #CLOSED
 server_socket.close()

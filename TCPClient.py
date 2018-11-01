@@ -36,7 +36,7 @@ host = args.ip
 established = False
 error = False
 block_size = 1024
-timeout = 0.5
+timeout = 1.0
 window_size = 0
 client_seq = 200
 server_seq = 0
@@ -90,16 +90,56 @@ print('client - synack ack sent - seq:',client_seq,' ack:',ack)
 #ESTABLISHED
 if established:
     print('client - established')
+    #add file reading/writing and then sliding window
 
-#FIN_WAIT_1
-print('client - fin wait 1')
 
-#FIN_WAIT_2
-print('client - fin wait 2')
 
-#TIME_WAIT
-print('client - time wait')
 
+
+if writing:
+    #FIN_WAIT_1
+    print('client - fin wait 1')
+    client_seq = 400
+    ack = 500
+    sending = client_packet_manager.create_fin_packet(client_port,server_port,client_seq,ack,urg,window_size)
+    client_socket.sendto(sending,server_address)
+    print('client - fin wait 1 sent - seq:',client_seq,' ack:',ack)
+    
+    #FIN_WAIT_2
+    print('client - fin wait 2')
+    try:
+        received, server = client_socket.recvfrom(block_size)
+    except s.timeout:
+        print('client - fin wait 2 timeout, closing connection')
+        f.close()
+        client_socket.close()
+    client_packet_manager.deconstruct_packet(received)
+    print('client - fin wait 2 received - seq:',client_packet_manager.sequence_number.uint,' ack:',client_packet_manager.ack_number.uint)
+    
+    #TIME_WAIT
+    print('client - time wait')
+    try:
+        received, server = client_socket.recvfrom(block_size)
+    except s.timeout:
+        print('client - last ack timeout, closing connection')
+        f.close()
+        client_socket.close()
+    client_packet_manager.deconstruct_packet(received)
+    print('client - last ack received - seq:',client_packet_manager.sequence_number.uint,' ack:',client_packet_manager.ack_number.uint)
+    
+    client_seq = client_packet_manager.ack_number.uint
+    ack = client_packet_manager.sequence_number.uint + 1
+    sending = client_packet_manager.create_ack_packet(client_port,server_port,client_seq,ack,urg,window_size)
+    client_socket.sendto(sending,server_address)
+    print('client - time wait ack sent - seq:',client_seq,' ack:',ack)
+    
+else:
+    #CLOSE_WAIT
+    print('clinet - close wait')
+    
+    #LAST_ACK
+    print('client - last ack')
+    
 #CLOSED
 f.close()
 client_socket.close()
