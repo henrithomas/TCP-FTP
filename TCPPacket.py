@@ -326,7 +326,10 @@ class TCPPacket:
         print('TCP Packet')
     
 if __name__ == "__main__":
-    P = TCPPacket()
+    #P = TCPPacket()
+    #P.main()
+    print('TCP Packet')
+"""
     s = 'hello.txt'
     data = s.encode()
     p_test = TCPPacket()
@@ -347,11 +350,4 @@ if __name__ == "__main__":
     data = s.encode()
     p_test.deconstruct_packet(P.create_data_packet(1002,3456,320,104,True,6,data))
     p_test.print_self()    
-        
-        
-        
-        
-        
-        
-        
-        
+"""         
