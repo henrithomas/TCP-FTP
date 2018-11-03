@@ -33,6 +33,8 @@ timeout = 0.5
 window_size = 0
 server_seq = 300
 client_seq = 0
+done = False
+timeout = False
 ack = 0
 received = bytes()
 sending = bytes()
@@ -58,6 +60,8 @@ else:
     urg = False
     writing = True
     window_size = randint(4,9)
+    server_socket.settimeout(timeout)
+    server_window = TCPWindow(server_seq,window_size,block_size)
 client_window_size = server_packet_manager.window.uint
 
 ack = client_seq + 1
@@ -67,6 +71,7 @@ print('server - synack sent - seq:',server_seq,'ack:',ack)
 
 received, client = server_socket.recvfrom(block_size)
 server_packet_manager.deconstruct_packet(received)
+client_seq = client_packet_manager.sequence_number.uint
 established = True
 print('server - synack ack received')
 
@@ -75,11 +80,32 @@ print('server - synack ack received')
 if established:
     print('server - *established*')
     #add file reading/writing and then sliding window
-    
-    
-    
-    
-     
+    if writing:
+        while not(done):
+            if not(server_window.full) and not(timeout):
+                #send packet
+            elif server_window.full and not(timeout):
+                #receive ack
+            elif server_window.full and timeout:
+                #resend packets
+    else:
+        #receive packet
+        received, client = server_socket.recvfrom(block_size)
+        server_packet_manager.deconstruct_packet(received)
+        #check packet in order, set booleans
+        #check for errors too
+        if server_packet_manager.sequence_number.uint == client_seq:
+            #increment for the expected next client seq for ack packet
+            client_seq += block_size
+            #write packet data to file
+            #send ack
+            server_seq = server_packet_manager.ack_number.uint
+            sending = server_packet_manager.create_ack_packet(server_port,client_port,server_seq,client_seq,urg,window_size)
+            server_socket.sendto(sending,client)
+        #but if not in order resend last good ack(?)
+
+
+
 #******************** CLOSING SEQUENCE ********************
 if writing:
     #FIN_WAIT_1
@@ -89,19 +115,19 @@ if writing:
     sending = server_packet_manager.create_fin_packet(server_port,client_port,server_seq,ack,urg,window_size)
     server_socket.sendto(sending,client)
     print('server - fin wait 1 sent - seq:',server_seq,' ack:',ack,' control:',server_packet_manager.control)
-    
+
     #FIN_WAIT_2
     print('server - *fin wait 2*')
     received, client = server_socket.recvfrom(block_size)
     server_packet_manager.deconstruct_packet(received)
     print('server - fin wait 2 received - seq:',server_packet_manager.sequence_number.uint,' ack:',server_packet_manager.ack_number.uint)
-    
+
     #TIME_WAIT
     print('server - *time wait*')
     received, client = server_socket.recvfrom(block_size)
     server_packet_manager.deconstruct_packet(received)
     print('server - time wait received - seq:',server_packet_manager.sequence_number.uint,' ack:',server_packet_manager.ack_number.uint)
-    
+
     server_seq = server_packet_manager.ack_number.uint
     ack = server_packet_manager.sequence_number.uint + 1
     sending = server_packet_manager.create_ack_packet(server_port,client_port,server_seq,ack,urg,window_size)
@@ -113,23 +139,23 @@ else:
     received, client = server_socket.recvfrom(block_size)
     server_packet_manager.deconstruct_packet(received)
     print('server - fin wait received - seq:',server_packet_manager.sequence_number.uint,' ack:',server_packet_manager.ack_number.uint,' control:',server_packet_manager.control)
-    
+
     server_seq = server_packet_manager.ack_number.uint
     ack = server_packet_manager.sequence_number.uint + 1
     sending = server_packet_manager.create_ack_packet(server_port,client_port,server_seq,ack,urg,window_size)
     server_socket.sendto(sending,client)
     print('server - close wait ack sent - seq:',server_seq,' ack:',ack)
-    
+
     #lAST_ACK
     print('server - *last ack*')
     sending = server_packet_manager.create_fin_packet(server_port,client_port,server_seq,ack,urg,window_size)
     server_socket.sendto(sending,client)
     print('server - last ack sent - seq:',server_seq,' ack:',ack,' control:',server_packet_manager.control)
-    
+
     received, client = server_socket.recvfrom(block_size)
     server_packet_manager.deconstruct_packet(received)
     print('server - time wait ack received - seq:',server_packet_manager.sequence_number.uint,' ack:',server_packet_manager.ack_number.uint)
-    
+
 #CLOSED
 server_socket.close()
 print('server - *complete*')
