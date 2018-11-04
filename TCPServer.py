@@ -6,6 +6,7 @@ Assignment 2
 """
 #from socket import *
 import socket as s
+import binascii
 from TCPPacket import TCPPacket
 from TCPWindow import TCPWindow
 from TCPTimer import TCPTimer
@@ -28,6 +29,8 @@ host = s.gethostname()
 writing = False
 established = False
 error = False
+client_checksum = 0
+server_checksum = 0
 block_size = 1024
 timeout = 0.5
 window_size = 0
@@ -35,6 +38,7 @@ server_seq = 300
 client_seq = 0
 done = False
 timeout = False
+#error = False
 ack = 0
 received = bytes()
 sending = bytes()
@@ -54,9 +58,14 @@ print('server - client address: ip:',client[0],' port:',client[1])
 client_port = client[1]
 client_seq = server_packet_manager.sequence_number.uint
 client_control_bits = server_packet_manager.control
+
 if client_control_bits[0] == True:
+    #reading from client
+    f = open(server_packet_manager.file_name + 'SERVER', 'wb')
     urg = True
 else:
+    #writing to client 
+    f = open(server_packet_manager.file_name, 'rb')
     urg = False
     writing = True
     window_size = randint(4,9)
@@ -71,7 +80,7 @@ print('server - synack sent - seq:',server_seq,'ack:',ack)
 
 received, client = server_socket.recvfrom(block_size)
 server_packet_manager.deconstruct_packet(received)
-client_seq = client_packet_manager.sequence_number.uint
+client_seq = server_packet_manager.sequence_number.uint
 established = True
 print('server - synack ack received')
 
@@ -84,25 +93,41 @@ if established:
         while not(done):
             if not(server_window.full) and not(timeout):
                 #send packet
+                print('')
             elif server_window.full and not(timeout):
                 #receive ack
+                 print('')
             elif server_window.full and timeout:
                 #resend packets
+                 print('')
     else:
-        #receive packet
-        received, client = server_socket.recvfrom(block_size)
-        server_packet_manager.deconstruct_packet(received)
-        #check packet in order, set booleans
-        #check for errors too
-        if server_packet_manager.sequence_number.uint == client_seq:
-            #increment for the expected next client seq for ack packet
-            client_seq += block_size
-            #write packet data to file
-            #send ack
-            server_seq = server_packet_manager.ack_number.uint
-            sending = server_packet_manager.create_ack_packet(server_port,client_port,server_seq,client_seq,urg,window_size)
-            server_socket.sendto(sending,client)
-        #but if not in order resend last good ack(?)
+        while not(done):
+            #receive packet
+            received, client = server_socket.recvfrom(block_size)
+            server_packet_manager.deconstruct_packet(received)
+            if len(server_packet_manager.data) < block_size:
+                done = True
+            #check for errors
+            client_checksum = server_packet_manager.checksum.uint
+            server_checksum = binascii.crc32(server_packet_manager.data.tobytes())
+            server_checksum = binascii.crc_hqx(server_packet_manager.data.tobytes(),server_checksum)
+            if client_checksum != server_checksum:
+                error = True
+            #check packet in order, set booleans
+            if server_packet_manager.sequence_number.uint == client_seq and error == False:
+                #increment for the expected next client seq for ack packet
+                client_seq += block_size
+                #write packet data to file
+                f.write(server_packet_manager.data.tobytes())
+                #send new ack
+                server_seq = server_packet_manager.ack_number.uint
+                sending = server_packet_manager.create_ack_packet(server_port,client_port,server_seq,client_seq,urg,window_size)
+                server_socket.sendto(sending,client)
+            else:
+                #resend last ack
+                server_seq = server_packet_manager.ack_number.uint
+                sending = server_packet_manager.create_ack_packet(server_port,client_port,server_seq,client_seq,urg,window_size)
+                server_socket.sendto(sending,client)
 
 
 

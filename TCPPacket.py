@@ -5,6 +5,8 @@ Computer Networks
 Assignment 2
 """
 from bitstring import BitArray
+import binascii
+
 class TCPPacket:
     #header and data
     """
@@ -38,6 +40,7 @@ class TCPPacket:
         self.padding = BitArray('0x0000')
         self.data = BitArray('0x00000000')
         self.file_name = ''
+        self.crc = 0
         
     #method to ensure proper hex string length
     def full_hex(self,s,size):
@@ -247,6 +250,9 @@ class TCPPacket:
             self.control = BitArray('0b100000')
         else:
             self.control = BitArray('0b000000')
+        #create checksum
+        self.crc = binascii.crc32(dat)
+        self.checksum = BitArray(hex(binascii.crc_hqx(dat,self.crc)))
         #create packet string
         pkt = self.source_port
         pkt.append(self.destination_port)
@@ -301,6 +307,8 @@ class TCPPacket:
         self.ack_number = BitArray(dat[8:12])
         temp = BitArray(dat[13:14])
         self.control = temp[2:8]
+        if self.control == BitArray('0b000010') or self.control == BitArray('0b100010'):
+            self.file_name = dat[24:].decode()
         del temp
         self.window = BitArray(dat[14:16])
         self.checksum = BitArray(dat[16:18])

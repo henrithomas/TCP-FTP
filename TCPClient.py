@@ -100,10 +100,13 @@ if established:
         while not(done):
             if not(client_window.full) and not(timeout):
                 #send packet
+                print('')
             elif client_window.full and not(timeout):
                 #receive ack
+                print('')
             elif client_window.full and timeout:
                 #resend packet
+                print('')
     else:
         #receive packet
         #check packet in order, set booleans
