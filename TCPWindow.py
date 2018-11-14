@@ -11,6 +11,7 @@ from bitstring import Bits
 class TCPWindow:
     def __init__(self,start,size,seq_size):
         self.file_offset = 0
+        self.initial_base = start
         self.base = start
         self.next_sequence_number = 0
         self.window_size = size
@@ -37,13 +38,18 @@ class TCPWindow:
                 if i == (self.window_size - 1):
                     self.sequence_array[i] = seq
                     self.full = True
+                elif i == 0:
+                    self.sequence_array[i] = seq
+                    self.next_sequence_number = seq + self.sequence_size
+                     self.base = seq
+                    self.file_offset = seq - self.initial_base
                 else:
                     self.sequence_array[i] = seq
                     self.next_sequence_number = seq + self.sequence_size
-
                 break
 
     def update_ack(self,i,ack):
+        self.full = False
         self.ack_array.set(i,ack)
 
     def print_self(self):

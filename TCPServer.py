@@ -64,7 +64,7 @@ if client_control_bits[0] == True:
     f = open(server_packet_manager.file_name + 'SERVER', 'wb')
     urg = True
 else:
-    #writing to client 
+    #writing to client
     f = open(server_packet_manager.file_name, 'rb')
     urg = False
     writing = True
@@ -97,6 +97,13 @@ if established:
             elif server_window.full and not(timeout):
                 #receive ack
                  print('')
+                 try:
+                     received, client = server_socket.recvfrom(block_size)
+                     timeout = False
+                     print('server ack received')
+                 except s.timeout:
+                     timeout = True
+                     print('server - packet timeout')
             elif server_window.full and timeout:
                 #resend packets
                  print('')
