@@ -41,13 +41,20 @@ class TCPWindow:
                 elif i == 0:
                     self.sequence_array[i] = seq
                     self.next_sequence_number = seq + self.sequence_size
-                     self.base = seq
+                    self.base = seq
                     self.file_offset = seq - self.initial_base
                 else:
                     self.sequence_array[i] = seq
                     self.next_sequence_number = seq + self.sequence_size
                 break
 
+    def shift_window(self):
+        for i in range(1,self.window_size):     
+            self.sequence_array[i-1] = self.sequence_array[i]
+            if i == self.window_size - 1:
+                self.sequence_array[i] = 0
+        self.full = False
+        
     def update_ack(self,i,ack):
         self.full = False
         self.ack_array.set(i,ack)
@@ -71,5 +78,9 @@ if __name__ == "__main__":
     window.update_window(402)
     window.update_window(502)
     window.update_window(602)
-    window.update_ack(1,True)
+    #window.update_ack(1,True)
+    window.print_self()
+    window.shift_window()
+    window.print_self()
+    window.shift_window()
     window.print_self()
