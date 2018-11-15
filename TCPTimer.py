@@ -25,7 +25,11 @@ class TCPTimer:
             self.times[i-1] = self.times[i]
             if i == self.timer_size - 1:
                 self.times[i] = 0.0
-            
+    
+    def clear_times(self):
+        for i in range(0,self.timer_size):
+            self.times[i] = 0.0
+        
     def stop_timer(self):
         self.start_time = 0.0
         self.current_time = 0.0
@@ -46,5 +50,8 @@ if __name__ == "__main__":
     timer.start_new_timer()
     print('times:',timer.times)
     timer.shift_times()
-    timer.shift_times()
-    print(timer.times)
+    print('times:',timer.times)
+    timer.clear_times()
+    print('times:',timer.times)
+    timer.start_new_timer()
+    print('times:',timer.times)

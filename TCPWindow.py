@@ -40,12 +40,11 @@ class TCPWindow:
                     self.full = True
                 elif i == 0:
                     self.sequence_array[i] = seq
-                    self.next_sequence_number = seq + self.sequence_size
                     self.base = seq
-                    self.file_offset = seq - self.initial_base
                 else:
                     self.sequence_array[i] = seq
-                    self.next_sequence_number = seq + self.sequence_size
+                if self.full:
+                    self.next_sequence_number = self.sequence_array[self.window_size - 1] + self.sequence_size
                 break
 
     def shift_window(self):
@@ -53,6 +52,8 @@ class TCPWindow:
             self.sequence_array[i-1] = self.sequence_array[i]
             if i == self.window_size - 1:
                 self.sequence_array[i] = 0
+        self.file_offset += self.sequence_size
+        self.base = self.sequence_array[0]
         self.full = False
         
     def update_ack(self,i,ack):
@@ -67,20 +68,30 @@ class TCPWindow:
         print('window ack array:',self.ack_array.bin)
         print('window full:',self.full)
         print('window sequence size:',self.sequence_size)
-        print('window next sequence number:',self.next_sequence_number)
+        print('window next sequence number:',self.next_sequence_number,'\n')
 
 if __name__ == "__main__":
-    window = TCPWindow(302,4,100)
+    seq = 301
+    window = TCPWindow(seq,4,1024)
+    
     window.print_self()
-    window.set_file_offset(512)
-    window.set_base(302)
-    window.update_window(302)
-    window.update_window(402)
-    window.update_window(502)
-    window.update_window(602)
-    #window.update_ack(1,True)
+    window.set_base(seq)
+    window.set_file_offset(0)
+    window.update_window(seq)
+    seq += 1024
+    window.update_window(seq)
+    seq += 1024
+    window.update_window(seq)
+    seq += 1024
+    window.update_window(seq)
     window.print_self()
+    
     window.shift_window()
+    seq += 1024
+    window.update_window(seq)
     window.print_self()
+    
     window.shift_window()
+    seq += 1024
+    window.update_window(seq)
     window.print_self()

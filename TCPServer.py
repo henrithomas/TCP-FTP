@@ -32,7 +32,8 @@ error = False
 client_checksum = 0
 server_checksum = 0
 block_size = 1024
-timeout = 0.5
+frame_size = 1472
+timeout = 1.0
 window_size = 0
 server_seq = 300
 client_seq = 0
@@ -48,12 +49,16 @@ server_packet_manager = TCPPacket()
 server_socket = s.socket(s.AF_INET,s.SOCK_DGRAM)
 print('server - *ready to receive*')
 server_socket.bind((host,server_port))
-#server_socket.settimeout(timeout)
+
 
 #******************** 3-WAY HANDSHAKE ********************
 #SYN_RCVD
-received, client = server_socket.recvfrom(block_size)
+try:
+    received, client = server_socket.recvfrom(frame_size)
+except s.timeout:
+    print('server - syn receive timeout')
 server_packet_manager.deconstruct_packet(received)
+#server_socket.settimeout(timeout)
 print('server - client address: ip:',client[0],' port:',client[1])
 client_port = client[1]
 client_seq = server_packet_manager.sequence_number.uint
@@ -61,7 +66,9 @@ client_control_bits = server_packet_manager.control
 
 if client_control_bits[0] == True:
     #reading from client
-    f = open(server_packet_manager.file_name + 'SERVER', 'wb')
+    file_name = server_packet_manager.data.tobytes().decode()
+    print('server - file:',file_name)
+    f = open('serverfile.txt', 'wb')
     urg = True
 else:
     #writing to client
@@ -69,16 +76,18 @@ else:
     urg = False
     writing = True
     window_size = randint(4,9)
-    server_socket.settimeout(timeout)
+    #server_socket.settimeout(timeout)
+    server_timer = TCPTimer(timeout,window_size)
     server_window = TCPWindow(server_seq,window_size,block_size)
 client_window_size = server_packet_manager.window.uint
 
 ack = client_seq + 1
 sending = server_packet_manager.create_synack_packet(server_port,client_port,server_seq,ack,urg,client_window_size)
+print('server - sending length:',len(sending))
 server_socket.sendto(sending,client)
 print('server - synack sent - seq:',server_seq,'ack:',ack)
 
-received, client = server_socket.recvfrom(block_size)
+received, client = server_socket.recvfrom(frame_size)
 server_packet_manager.deconstruct_packet(received)
 client_seq = server_packet_manager.sequence_number.uint
 established = True
@@ -87,7 +96,7 @@ print('server - synack ack received')
 #******************** DATA TRANSFER ********************
 #ESTABLISHED
 if established:
-    print('server - *established*')
+    print('\tserver - *established*')
     #add file reading/writing and then sliding window
     if writing:
         while not(done):
@@ -98,43 +107,52 @@ if established:
                 #receive ack
                  print('')
                  try:
-                     received, client = server_socket.recvfrom(block_size)
+                     received, client = server_socket.recvfrom(frame_size)
                      timeout = False
-                     print('server ack received')
+                     print('\tserver ack received')
                  except s.timeout:
                      timeout = True
-                     print('server - packet timeout')
+                     print('\tserver - packet timeout')
             elif server_window.full and timeout:
                 #resend packets
                  print('')
+            else:
+                #wait
+                print('\tserver - waiting')
     else:
         while not(done):
             #receive packet
-            received, client = server_socket.recvfrom(block_size)
+            received, client = server_socket.recvfrom(frame_size)
             server_packet_manager.deconstruct_packet(received)
+            print('\tserver - received packet - seq:',server_packet_manager.sequence_number.uint,' ack:',server_packet_manager.ack_number.uint)
             if len(server_packet_manager.data) < block_size:
                 done = True
             #check for errors
             client_checksum = server_packet_manager.checksum.uint
             server_checksum = binascii.crc32(server_packet_manager.data.tobytes())
             server_checksum = binascii.crc_hqx(server_packet_manager.data.tobytes(),server_checksum)
-            if client_checksum != server_checksum:
-                error = True
+            #if client_checksum != server_checksum:
+            #    error = True
             #check packet in order, set booleans
-            if server_packet_manager.sequence_number.uint == client_seq and error == False:
-                #increment for the expected next client seq for ack packet
-                client_seq += block_size
-                #write packet data to file
-                f.write(server_packet_manager.data.tobytes())
-                #send new ack
-                server_seq = server_packet_manager.ack_number.uint
-                sending = server_packet_manager.create_ack_packet(server_port,client_port,server_seq,client_seq,urg,window_size)
-                server_socket.sendto(sending,client)
-            else:
-                #resend last ack
-                server_seq = server_packet_manager.ack_number.uint
-                sending = server_packet_manager.create_ack_packet(server_port,client_port,server_seq,client_seq,urg,window_size)
-                server_socket.sendto(sending,client)
+            #print('\tserver - client_seq:',client_seq,' received sequence:',server_packet_manager.sequence_number.uint)
+            if not(done):
+                if server_packet_manager.sequence_number.uint == client_seq and error == False:
+                    #increment for the expected next client seq for ack packet
+                    client_seq += block_size
+                    #write packet data to file
+                    f.write(server_packet_manager.data.tobytes())
+                    #send new ack
+                    server_seq = server_packet_manager.ack_number.uint
+                    print('\tserver - sending ack - seq:',server_seq,' ack:',client_seq)
+                    sending = server_packet_manager.create_ack_packet(server_port,client_port,server_seq,client_seq,urg,window_size)
+                    server_socket.sendto(sending,client)
+                    #error = False
+                else:
+                    #resend last ack
+                    #server_seq = server_packet_manager.ack_number.uint
+                    print('\tserver - resending ack - seq:',server_seq,' ack:',client_seq)
+                    sending = server_packet_manager.create_ack_packet(server_port,client_port,server_seq,client_seq,urg,window_size)
+                    server_socket.sendto(sending,client)
 
 
 
@@ -150,13 +168,13 @@ if writing:
 
     #FIN_WAIT_2
     print('server - *fin wait 2*')
-    received, client = server_socket.recvfrom(block_size)
+    received, client = server_socket.recvfrom(frame_size)
     server_packet_manager.deconstruct_packet(received)
     print('server - fin wait 2 received - seq:',server_packet_manager.sequence_number.uint,' ack:',server_packet_manager.ack_number.uint)
 
     #TIME_WAIT
     print('server - *time wait*')
-    received, client = server_socket.recvfrom(block_size)
+    received, client = server_socket.recvfrom(frame_size)
     server_packet_manager.deconstruct_packet(received)
     print('server - time wait received - seq:',server_packet_manager.sequence_number.uint,' ack:',server_packet_manager.ack_number.uint)
 
@@ -168,7 +186,7 @@ if writing:
 else:
     #CLOSE_WAIT
     print('server - *close wait*')
-    received, client = server_socket.recvfrom(block_size)
+    received, client = server_socket.recvfrom(frame_size)
     server_packet_manager.deconstruct_packet(received)
     print('server - fin wait received - seq:',server_packet_manager.sequence_number.uint,' ack:',server_packet_manager.ack_number.uint,' control:',server_packet_manager.control)
 
@@ -184,7 +202,7 @@ else:
     server_socket.sendto(sending,client)
     print('server - last ack sent - seq:',server_seq,' ack:',ack,' control:',server_packet_manager.control)
 
-    received, client = server_socket.recvfrom(block_size)
+    received, client = server_socket.recvfrom(frame_size)
     server_packet_manager.deconstruct_packet(received)
     print('server - time wait ack received - seq:',server_packet_manager.sequence_number.uint,' ack:',server_packet_manager.ack_number.uint)
 
