@@ -25,7 +25,7 @@ class TCPTimer:
             self.times[i-1] = self.times[i]
             if i == self.timer_size - 1:
                 self.times[i] = 0.0
-    
+        
     def clear_times(self):
         for i in range(0,self.timer_size):
             self.times[i] = 0.0

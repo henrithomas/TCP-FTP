@@ -244,15 +244,14 @@ class TCPPacket:
         self.sequence_number = BitArray(self.full_hex(hex(seq),8))
         self.ack_number = BitArray(self.full_hex(hex(ack),8))
         self.window = BitArray(self.full_hex(hex(window),4))
+        self.checksum =  BitArray(self.full_hex(hex(0),4))
         self.data = BitArray(dat)
         #send r/w and ack flags
         if urg:
             self.control = BitArray('0b100000')
         else:
             self.control = BitArray('0b000000')
-        #create checksum
-        self.crc = binascii.crc32(dat)
-        self.checksum = BitArray(hex(binascii.crc_hqx(dat,self.crc)))
+       
         #create packet string
         pkt = self.source_port
         pkt.append(self.destination_port)
@@ -268,6 +267,12 @@ class TCPPacket:
         pkt.append(self.padding)
         pkt.append(self.data)
         
+        #create checksum
+        self.crc = binascii.crc32(pkt.tobytes())
+        self.crc = binascii.crc_hqx(pkt.tobytes(),self.crc)
+        self.checksum = BitArray(self.full_hex(hex(self.crc),4))
+        pkt[128:144] = self.checksum
+        #self.checksum = BitArray(dat[16:18])
         return pkt.tobytes()
 
     def create_fin_packet(self,source,dest,seq,ack,urg,window):
@@ -312,20 +317,38 @@ class TCPPacket:
         del temp
         self.window = BitArray(dat[14:16])
         self.checksum = BitArray(dat[16:18])
-        self.data = BitArray(dat[24:])
+        self.data = BitArray(dat[24:1048])
+
+    def byte_form(self):
+        #create packet string
+        pkt = self.source_port
+        pkt.append(self.destination_port)
+        pkt.append(self.sequence_number)
+        pkt.append(self.ack_number)
+        pkt.append(self.data_offset)
+        pkt.append(self.reserved)
+        pkt.append(self.control)
+        pkt.append(self.window)
+        pkt.append(self.checksum)
+        pkt.append(self.urgent_pointer)
+        pkt.append(self.options)
+        pkt.append(self.padding)
+        pkt.append(self.data)
+        
+        return pkt.tobytes()
 
     def print_self(self):
-        print('packet source port:',self.source_port.int)
-        print('packet destination port:',self.destination_port.int)
-        print('packet sequence number:',self.sequence_number.int)
-        print('packet acknowledgment number:',self.ack_number.int)
-        print('packet data offset:',self.data_offset.int)
-        print('packet reserved:',self.reserved.int)
+        print('packet source port:',self.source_port.uint)
+        print('packet destination port:',self.destination_port.uint)
+        print('packet sequence number:',self.sequence_number.uint)
+        print('packet acknowledgment number:',self.ack_number.uint)
+        print('packet data offset:',self.data_offset.uint)
+        print('packet reserved:',self.reserved.uint)
         print('packet control bits:',self.control)
-        print('packet window:',self.window.int)
-        print('packet checksum',self.checksum.int)
-        print('packet urgent pointer:',self.urgent_pointer.int)
-        print('packet options:',self.options.int)
+        print('packet window:',self.window.uint)
+        print('packet checksum',self.checksum.uint)
+        print('packet urgent pointer:',self.urgent_pointer.uint)
+        print('packet options:',self.options.uint)
         print('packet padding',self.padding)
         print('packet data:',self.data.tobytes().decode()) 
 
@@ -334,13 +357,13 @@ class TCPPacket:
         print('TCP Packet')
     
 if __name__ == "__main__":
-    #P = TCPPacket()
+    P = TCPPacket()
     #P.main()
     print('TCP Packet')
-"""
     s = 'hello.txt'
     data = s.encode()
     p_test = TCPPacket()
+    """
     print('syn rrq test')
     p_test.deconstruct_packet(P.create_syn_rrq_packet(s,151,320,100))
     p_test.print_self()
@@ -353,9 +376,13 @@ if __name__ == "__main__":
     print('\nack test')
     p_test.deconstruct_packet(P.create_ack_packet(3456,1002,101,301,True,6))
     p_test.print_self()
+    """
     print('\ndata test')
     s = 'whole lotta data, whole lotta data, whole lotta data, whole lotta data, whole lotta data'
     data = s.encode()
     p_test.deconstruct_packet(P.create_data_packet(1002,3456,320,104,True,6,data))
     p_test.print_self()    
-"""         
+    p_test.set_checksum(0)
+    print('')
+    p_test.print_self()
+    print(p_test.byte_form())

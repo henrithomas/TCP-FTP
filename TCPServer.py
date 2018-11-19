@@ -11,9 +11,10 @@ from TCPPacket import TCPPacket
 from TCPWindow import TCPWindow
 from TCPTimer import TCPTimer
 from bitstring import BitArray
+import time
 import argparse
 from pathlib import Path
-from random import randint
+import random as r
 #STATES: CLOSED, SYN_SENT, ESTABLISHED, FIN_WAIT_1,
 #        FIN_WAIT_2, TIME_WAIT
 #run in background on windows: start /b python script.py
@@ -31,7 +32,7 @@ established = False
 error = False
 client_checksum = 0
 server_checksum = 0
-block_size = 1024
+block_size = 1400
 frame_size = 1472
 timeout = 1.0
 window_size = 0
@@ -75,7 +76,7 @@ else:
     f = open(server_packet_manager.file_name, 'rb')
     urg = False
     writing = True
-    window_size = randint(4,9)
+    window_size = r.randint(4,9)
     #server_socket.settimeout(timeout)
     server_timer = TCPTimer(timeout,window_size)
     server_window = TCPWindow(server_seq,window_size,block_size)
@@ -124,29 +125,33 @@ if established:
             #receive packet
             received, client = server_socket.recvfrom(frame_size)
             server_packet_manager.deconstruct_packet(received)
-            print('\tserver - received packet - seq:',server_packet_manager.sequence_number.uint,' ack:',server_packet_manager.ack_number.uint)
-            if len(server_packet_manager.data) < block_size:
+            #print('\tserver - received packet - seq:',server_packet_manager.sequence_number.uint,' ack:',server_packet_manager.ack_number.uint)
+            if server_packet_manager.control == '0b110001' or server_packet_manager.control == '0b010001':
                 done = True
             #check for errors
             client_checksum = server_packet_manager.checksum.uint
-            server_checksum = binascii.crc32(server_packet_manager.data.tobytes())
-            server_checksum = binascii.crc_hqx(server_packet_manager.data.tobytes(),server_checksum)
+            server_packet_manager.set_checksum(0)
+            server_checksum = binascii.crc32(server_packet_manager.byte_form())
+            server_checksum = binascii.crc_hqx(server_packet_manager.byte_form(),server_checksum)
             #if client_checksum != server_checksum:
-            #    error = True
+            #print('\tserver - packet check - seq:',client_seq,' server check:',server_checksum,' client check:',client_checksum)
+                #error = True
             #check packet in order, set booleans
             #print('\tserver - client_seq:',client_seq,' received sequence:',server_packet_manager.sequence_number.uint)
             if not(done):
                 if server_packet_manager.sequence_number.uint == client_seq and error == False:
-                    #increment for the expected next client seq for ack packet
-                    client_seq += block_size
-                    #write packet data to file
-                    f.write(server_packet_manager.data.tobytes())
-                    #send new ack
-                    server_seq = server_packet_manager.ack_number.uint
-                    print('\tserver - sending ack - seq:',server_seq,' ack:',client_seq)
-                    sending = server_packet_manager.create_ack_packet(server_port,client_port,server_seq,client_seq,urg,window_size)
-                    server_socket.sendto(sending,client)
-                    #error = False
+                    if r.random() < 0.98:
+                        
+                        #increment for the expected next client seq for ack packet
+                        client_seq += block_size
+                        #write packet data to file
+                        f.write(server_packet_manager.data.tobytes())
+                        #send new ack
+                        server_seq +=1  #server_packet_manager.ack_number.uint
+                        print('\tserver - sending ack - seq:',server_seq,' ack:',client_seq)
+                        sending = server_packet_manager.create_ack_packet(server_port,client_port,server_seq,client_seq,urg,window_size)
+                        server_socket.sendto(sending,client)
+                        #error = False
                 else:
                     #resend last ack
                     #server_seq = server_packet_manager.ack_number.uint
@@ -157,11 +162,10 @@ if established:
 
 
 #******************** CLOSING SEQUENCE ********************
+f.close()
 if writing:
     #FIN_WAIT_1
     print('server - *fin wait 1*')
-    server_seq = 400
-    ack = 500
     sending = server_packet_manager.create_fin_packet(server_port,client_port,server_seq,ack,urg,window_size)
     server_socket.sendto(sending,client)
     print('server - fin wait 1 sent - seq:',server_seq,' ack:',ack,' control:',server_packet_manager.control)
@@ -186,8 +190,8 @@ if writing:
 else:
     #CLOSE_WAIT
     print('server - *close wait*')
-    received, client = server_socket.recvfrom(frame_size)
-    server_packet_manager.deconstruct_packet(received)
+    #received, client = server_socket.recvfrom(frame_size)
+    #server_packet_manager.deconstruct_packet(received)
     print('server - fin wait received - seq:',server_packet_manager.sequence_number.uint,' ack:',server_packet_manager.ack_number.uint,' control:',server_packet_manager.control)
 
     server_seq = server_packet_manager.ack_number.uint
@@ -207,6 +211,8 @@ else:
     print('server - time wait ack received - seq:',server_packet_manager.sequence_number.uint,' ack:',server_packet_manager.ack_number.uint)
 
 #CLOSED
-server_socket.close()
 print('server - *complete*')
 print('server - *closed*')
+time.sleep(1)
+server_socket.close()
+quit()
