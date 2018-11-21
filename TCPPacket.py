@@ -317,7 +317,7 @@ class TCPPacket:
         del temp
         self.window = BitArray(dat[14:16])
         self.checksum = BitArray(dat[16:18])
-        self.data = BitArray(dat[24:1048])
+        self.data = BitArray(dat[24:1400])
 
     def byte_form(self):
         #create packet string
@@ -357,13 +357,15 @@ class TCPPacket:
         print('TCP Packet')
     
 if __name__ == "__main__":
+    print('TCP Packet')
+    """
     P = TCPPacket()
     #P.main()
-    print('TCP Packet')
+    
     s = 'hello.txt'
     data = s.encode()
     p_test = TCPPacket()
-    """
+    
     print('syn rrq test')
     p_test.deconstruct_packet(P.create_syn_rrq_packet(s,151,320,100))
     p_test.print_self()
@@ -376,7 +378,7 @@ if __name__ == "__main__":
     print('\nack test')
     p_test.deconstruct_packet(P.create_ack_packet(3456,1002,101,301,True,6))
     p_test.print_self()
-    """
+    
     print('\ndata test')
     s = 'whole lotta data, whole lotta data, whole lotta data, whole lotta data, whole lotta data'
     data = s.encode()
@@ -386,3 +388,4 @@ if __name__ == "__main__":
     print('')
     p_test.print_self()
     print(p_test.byte_form())
+    """

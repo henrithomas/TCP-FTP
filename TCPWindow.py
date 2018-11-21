@@ -50,10 +50,10 @@ class TCPWindow:
                     self.next_sequence_number = self.sequence_array[self.window_size - 1] + self.sequence_size
                 break
 
-    def shift_window_helper(self,a):
+    def shift_window_helper(self,s):
         amount = 0
         for i in range(0,self.window_size):
-            if self.ack_array[i] == a:
+            if self.sequence_array[i] == s - self.sequence_size:
                 amount = i + 1
                 break
         return amount 
@@ -84,6 +84,8 @@ class TCPWindow:
         print('window next sequence number:',self.next_sequence_number,'\n')
 
 if __name__ == "__main__": 
+    print('TCP Window')
+    """
     seq = 1024
     window = TCPWindow(seq,4,1024)
     window.set_base(seq)
@@ -98,10 +100,11 @@ if __name__ == "__main__":
     seq += 1024
     a = window.update_window(seq,5)
     window.print_self()
-    shift = window.shift_window_helper(4)
+    shift = window.shift_window_helper(seq - 1024)
     
     for i in range(0,shift):
         window.shift_window()
     seq += 1024
     a = window.update_window(seq,6)
     window.print_self()
+    """

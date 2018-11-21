@@ -42,6 +42,8 @@ class TCPTimer:
         return self.timeout
 
 if __name__ == "__main__":
+    print('TCP Timer')
+    """
     timer = TCPTimer(0.5,3)
     timer.start_new_timer()
     print('times:',timer.times)
@@ -55,3 +57,4 @@ if __name__ == "__main__":
     print('times:',timer.times)
     timer.start_new_timer()
     print('times:',timer.times)
+    """
