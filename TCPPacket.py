@@ -41,7 +41,7 @@ class TCPPacket:
         self.data = BitArray('0x00000000')
         self.file_name = ''
         self.crc = 0
-        
+
     #method to ensure proper hex string length
     def full_hex(self,s,size):
         return '0x' + s[2:].zfill(size)
@@ -79,20 +79,20 @@ class TCPPacket:
 
     def set_control(self,val):
         self.control = val
-        
+
     def set_window(self,val):
         self.window = val
-        
+
     def set_checksum(self,val):
         self.checksum = BitArray(self.full_hex(hex(val),4))
-        
+
     def set_urgent_pointer(self,val):
         self.urgent_pointer = BitArray(self.full_hex(hex(val),4))
-        
+
     def set_data(self,val):
         self.data = val
 
-    #GET methods    
+    #GET methods
     def get_source_port(self,val):
         return self.source_port
 
@@ -106,23 +106,23 @@ class TCPPacket:
         return self.ack_number
 
     def get_data_offset(self,val):
-        return self.data_offset 
+        return self.data_offset
 
     def get_reserved(self,val):
-        return self.reserved 
+        return self.reserved
 
     def get_control(self,val):
         return self.control
-        
+
     def get_window(self,val):
         return self.window
-        
+
     def get_checksum(self,val):
         return self.checksum
-         
+
     def get_urgent_pointer(self,val):
         return self.urgent_pointer
-        
+
     def get_data(self,val):
         return self.data
 
@@ -150,7 +150,7 @@ class TCPPacket:
         pkt.append(self.options)
         pkt.append(self.padding)
         pkt.append(file)
-        
+
         return pkt.tobytes()
 
     #form a WRQ packet
@@ -177,9 +177,9 @@ class TCPPacket:
         pkt.append(self.options)
         pkt.append(self.padding)
         pkt.append(file)
-        
+
         return pkt.tobytes()
-        
+
     def create_synack_packet(self,source,dest,seq,ack,urg,window):
         self.source_port = BitArray(self.full_hex(hex(source),4))
         self.destination_port = BitArray(self.full_hex(hex(dest),4))
@@ -206,9 +206,9 @@ class TCPPacket:
         pkt.append(self.options)
         pkt.append(self.padding)
         pkt.append(self.data)
-        
+
         return pkt.tobytes()
-    
+
     def create_ack_packet(self,source,dest,seq,ack,urg,window):
         self.source_port = BitArray(self.full_hex(hex(source),4))
         self.destination_port = BitArray(self.full_hex(hex(dest),4))
@@ -235,9 +235,9 @@ class TCPPacket:
         pkt.append(self.options)
         pkt.append(self.padding)
         pkt.append(self.data)
-        
+
         return pkt.tobytes()
-    
+
     def create_data_packet(self,source,dest,seq,ack,urg,window,dat):
         self.source_port = BitArray(self.full_hex(hex(source),4))
         self.destination_port = BitArray(self.full_hex(hex(dest),4))
@@ -251,7 +251,7 @@ class TCPPacket:
             self.control = BitArray('0b100000')
         else:
             self.control = BitArray('0b000000')
-       
+
         #create packet string
         pkt = self.source_port
         pkt.append(self.destination_port)
@@ -266,7 +266,7 @@ class TCPPacket:
         pkt.append(self.options)
         pkt.append(self.padding)
         pkt.append(self.data)
-        
+
         #create checksum
         self.crc = binascii.crc32(pkt.tobytes())
         self.crc = binascii.crc_hqx(pkt.tobytes(),self.crc)
@@ -301,9 +301,9 @@ class TCPPacket:
         pkt.append(self.options)
         pkt.append(self.padding)
         pkt.append(self.data)
-        
+
         return pkt.tobytes()
-    
+
     #deconstruct a packet
     def deconstruct_packet(self, dat):
         self.source_port = BitArray(dat[0:2])
@@ -317,7 +317,7 @@ class TCPPacket:
         del temp
         self.window = BitArray(dat[14:16])
         self.checksum = BitArray(dat[16:18])
-        self.data = BitArray(dat[24:1400])
+        self.data = BitArray(dat[24:])
 
     def byte_form(self):
         #create packet string
@@ -334,7 +334,7 @@ class TCPPacket:
         pkt.append(self.options)
         pkt.append(self.padding)
         pkt.append(self.data)
-        
+
         return pkt.tobytes()
 
     def print_self(self):
@@ -350,22 +350,22 @@ class TCPPacket:
         print('packet urgent pointer:',self.urgent_pointer.uint)
         print('packet options:',self.options.uint)
         print('packet padding',self.padding)
-        print('packet data:',self.data.tobytes().decode()) 
+        print('packet data:',self.data.tobytes().decode())
 
     #class main method
     def main(self):
         print('TCP Packet')
-    
+
 if __name__ == "__main__":
     print('TCP Packet')
     """
     P = TCPPacket()
     #P.main()
-    
+
     s = 'hello.txt'
     data = s.encode()
     p_test = TCPPacket()
-    
+
     print('syn rrq test')
     p_test.deconstruct_packet(P.create_syn_rrq_packet(s,151,320,100))
     p_test.print_self()
@@ -378,12 +378,12 @@ if __name__ == "__main__":
     print('\nack test')
     p_test.deconstruct_packet(P.create_ack_packet(3456,1002,101,301,True,6))
     p_test.print_self()
-    
+
     print('\ndata test')
     s = 'whole lotta data, whole lotta data, whole lotta data, whole lotta data, whole lotta data'
     data = s.encode()
     p_test.deconstruct_packet(P.create_data_packet(1002,3456,320,104,True,6,data))
-    p_test.print_self()    
+    p_test.print_self()
     p_test.set_checksum(0)
     print('')
     p_test.print_self()

@@ -75,7 +75,7 @@ if client_control_bits[0] == True:
     urg = True
 else:
     #writing to client
-    f = open('test.txt', 'rb')
+    f = open('test2.txt', 'rb')
     urg = False
     writing = True
     window_size = r.randint(4,9)
@@ -130,7 +130,7 @@ if established:
                         except s.timeout:
                             timeout_bool = True
                             print('\tserver - ack timeout on socket')
-                    
+
                         if timeout_bool == False:
                             server_packet_manager.deconstruct_packet(received)
                             if server_packet_manager.ack_number.uint == last_seq:
@@ -138,7 +138,7 @@ if established:
                                 #print('server - received last ack')
                             if not(EOF):
                                 shift = server_window.shift_window_helper(server_packet_manager.ack_number.uint)
-                                for i in range(0,shift):    
+                                for i in range(0,shift):
                                     server_window.shift_window()
                                     server_timer.shift_times()
                             #print('\tserver - received ack - seq:',server_packet_manager.sequence_number.uint,' ack:',server_packet_manager.ack_number.uint,' window:',server_window.sequence_array)
@@ -177,13 +177,13 @@ if established:
             #check packet in order
             if not(done):
                 if server_packet_manager.sequence_number.uint == client_seq and error == False:
-                    if r.random() < 0.93:               
+                    if r.random() < 0.93:
                         #increment for the expected next client seq for ack packet
                         client_seq += block_size
                         #write packet data to file
                         f.write(server_packet_manager.data.tobytes())
                         #send new ack
-                        server_seq = server_packet_manager.ack_number.uint#+=1  
+                        server_seq = server_packet_manager.ack_number.uint#+=1
                         print('\tserver - sending ack - seq:',server_seq,' ack:',client_seq)
                         sending = server_packet_manager.create_ack_packet(server_port,client_port,server_seq,client_seq,urg,window_size)
                         server_socket.sendto(sending,client)
@@ -253,25 +253,25 @@ server_socket.close()
 quit()
 
 """
-                
+
 try:
     received, server = server_socket.recvfrom(frame_size)
     except s.timeout:
         timeout_bool = True
         print('\tclient - ack timeout on socket')
-        
+
         if timeout_bool == False:
             server_packet_manager.deconstruct_packet(received)
             print('\tclient - received ack - seq:',client_packet_manager.sequence_number.uint,' ack:',client_packet_manager.ack_number.uint)
             if client_packet_manager.ack_number.uint == last_ack:
                 done = True
                 shift = client_window.shift_window_helper(client_packet_manager.ack_number.uint)
-                for i in range(0,shift):    
+                for i in range(0,shift):
                     client_window.shift_window()
                     client_timer.shift_times()
-            
 
- 
+
+
         while not(done):
             if not(server_window.full) and not(timeout):
                 #send packet
